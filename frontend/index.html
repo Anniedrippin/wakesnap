@@ -669,7 +669,10 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        const API = 'http://localhost:8000';
+        // const API = 'http://localhost:8000';
+        const API = window.location.hostname === 'localhost'
+            ? 'http://localhost:8000'
+            : 'https://wakesnap-api.onrender.com';  // ← CHANGE THIS after deploy"""
         let alarms = [];
         let sessionId = null;
         let stream = null;
