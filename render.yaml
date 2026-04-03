@@ -1,15 +1,11 @@
-# render.yaml — place this in the ROOT of your repo.
-# Render reads it and provisions all services automatically (Blueprint deploy).
-
 services:
-  # ── Backend: FastAPI + Django ORM ────────────────────────────────────────────
+  # ── Backend ─────────────────────────────────────────────
   - type: web
     name: wakesnap-api
     runtime: python
     rootDir: backend
     buildCommand: chmod +x build.sh && ./build.sh
     startCommand: uvicorn fastapi_app:app --host 0.0.0.0 --port $PORT
-    plan: free
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
@@ -24,16 +20,15 @@ services:
           name: wakesnap-db
           property: connectionString
       - key: GOOGLE_VISION_API_KEY
-        sync: false # ← paste this manually in Render dashboard
+        sync: false
 
-  # ── Frontend: Static Site ─────────────────────────────────────────────────────
+  # ── Frontend ────────────────────────────────────────────
   - type: web
     name: wakesnap-frontend
     runtime: static
     rootDir: frontend
     staticPublishPath: .
-    buildCommand: "" # no build step needed — pure HTML
-    plan: free
+    buildCommand: ""
     headers:
       - path: /*
         name: Cache-Control
@@ -43,9 +38,7 @@ services:
         source: /*
         destination: /index.html
 
-# ── PostgreSQL Database ────────────────────────────────────────────────────────
 databases:
   - name: wakesnap-db
-    plan: free
     databaseName: wakesnap
     user: wakesnap
