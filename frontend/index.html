@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WakeSnap</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --surface2: #1a1a24;
+            --border: #2a2a38;
+            --accent: #ff4d6d;
+            --accent2: #7c3aed;
+            --green: #22d3a5;
+            --yellow: #fbbf24;
+            --text: #f0f0f8;
+            --muted: #6b7280;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 20px 80px;
+        }
+
+        header {
+            padding: 32px 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .live-clock {
+            font-size: 13px;
+            color: var(--muted);
+            background: var(--surface2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .big-time {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(72px, 22vw, 108px);
+            font-weight: 800;
+            letter-spacing: -4px;
+            line-height: 1;
+            background: linear-gradient(135deg, #fff 30%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            padding: 20px 0 6px;
+        }
+
+        .date-label {
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 28px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 6px;
+            border: none;
+            border-radius: 9px;
+            background: transparent;
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--surface2);
+            color: var(--text);
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .section-label {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .alarm-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .alarm-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .alarm-card.on {
+            border-color: rgba(255, 77, 109, 0.4);
+        }
+
+        .alarm-time {
+            font-family: 'Syne', sans-serif;
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .alarm-meta {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .test-btn {
+            margin-top: 8px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            background: rgba(255, 77, 109, 0.08);
+            border: 1px solid rgba(255, 77, 109, 0.25);
+            color: var(--accent);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .test-btn:hover {
+            background: rgba(255, 77, 109, 0.18);
+        }
+
+        .alarm-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 42px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .track {
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            background: var(--border);
+            transition: 0.2s;
+        }
+
+        .track::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            top: 3px;
+            left: 3px;
+            transition: 0.2s;
+        }
+
+        input:checked+.track {
+            background: var(--accent);
+        }
+
+        input:checked+.track::after {
+            transform: translateX(18px);
+        }
+
+        .del-btn {
+            width: 30px;
+            height: 30px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .del-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--muted);
+            padding: 48px 0;
+            font-size: 13px;
+        }
+
+        .empty-state .ico {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+        }
+
+        .form-row {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 10px;
+            letter-spacing: 1px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        input[type=time],
+        input[type=text] {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 9px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent2);
+        }
+
+        .days-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .day-chip {
+            padding: 6px 11px;
+            border-radius: 20px;
+            font-size: 11px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: 'DM Mono', monospace;
+        }
+
+        .day-chip.sel {
+            background: var(--accent2);
+            border-color: var(--accent2);
+            color: white;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            background: var(--accent);
+            border: none;
+            color: white;
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 4px;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.85;
+        }
+
+        .objects-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .obj-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .obj-emoji {
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+
+        .obj-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .obj-cat {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        /* ── ALARM OVERLAY ── */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: #08080d;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .ring-emoji {
+            font-size: 80px;
+            animation: pulse 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(1);
+            }
+
+            to {
+                transform: scale(1.18);
+            }
+        }
+
+        .ring-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 12px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 12px 0 28px;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.2;
+            }
+        }
+
+        .challenge-card {
+            background: var(--surface);
+            border: 2px solid var(--accent);
+            border-radius: 20px;
+            padding: 24px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 77, 109, 0.3);
+        }
+
+        .ch-instruction {
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .ch-object {
+            font-family: 'Syne', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .ch-hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .camera-wrap {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 14px;
+        }
+
+        #cameraFeed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .cam-label {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            color: white;
+            font-size: 11px;
+            padding: 3px 12px;
+            border-radius: 20px;
+        }
+
+        #captureCanvas {
+            display: none;
+        }
+
+        .ch-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-capture {
+            flex: 2;
+            padding: 13px;
+            border-radius: 10px;
+            background: var(--accent);
+            border: none;
+            color: white;
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-snooze {
+            flex: 1;
+            padding: 13px;
+            border-radius: 10px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-snooze:hover {
+            color: var(--yellow);
+            border-color: var(--yellow);
+        }
+
+        .result-box {
+            display: none;
+            text-align: center;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .result-icon {
+            font-size: 60px;
+            margin-bottom: 12px;
+        }
+
+        .result-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .result-sub {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 11px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <header>
+            <div class="logo">Wake<span>Snap</span></div>
+            <div class="live-clock" id="liveClock">--:--:--</div>
+        </header>
+        <div class="big-time" id="bigTime">--:--</div>
+        <div class="date-label" id="dateLabel">Loading...</div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('alarms')">⏰ Alarms</button>
+            <button class="tab" onclick="switchTab('add')">＋ New</button>
+            <button class="tab" onclick="switchTab('objects')">📦 Objects</button>
+        </div>
+
+        <div class="panel active" id="panel-alarms">
+            <div class="section-label">Active Alarms</div>
+            <div class="alarm-list" id="alarmList">
+                <div class="empty-state">
+                    <div class="ico">⏰</div>No alarms yet.
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-add">
+            <div class="section-label">New Alarm</div>
+            <div class="form-card">
+                <div class="form-row"><label>Label</label><input type="text" id="fLabel" placeholder="Morning Hustle"
+                        value="Wake Up!" /></div>
+                <div class="form-row"><label>Time</label><input type="time" id="fTime" value="07:00" /></div>
+                <div class="form-row">
+                    <label>Repeat Days</label>
+                    <div class="days-row" id="daysRow">
+                        <button class="day-chip" data-d="0">Mon</button>
+                        <button class="day-chip" data-d="1">Tue</button>
+                        <button class="day-chip" data-d="2">Wed</button>
+                        <button class="day-chip" data-d="3">Thu</button>
+                        <button class="day-chip" data-d="4">Fri</button>
+                        <button class="day-chip" data-d="5">Sat</button>
+                        <button class="day-chip" data-d="6">Sun</button>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="createAlarm()">Set Alarm</button>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-objects">
+            <div class="section-label">Room Object Pool</div>
+            <div class="objects-grid" id="objectsGrid">
+                <div class="empty-state" style="grid-column:1/-1">
+                    <div class="ico">📦</div>Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALARM CHALLENGE OVERLAY -->
+    <div class="overlay" id="overlay">
+        <div class="ring-emoji" id="ringEmoji">⏰</div>
+        <div class="ring-label">⏰ Wake Up ⏰</div>
+
+        <div class="challenge-card" id="challengeCard">
+            <div class="ch-instruction">Find &amp; photograph this object</div>
+            <div class="ch-object" id="chObject">—</div>
+            <div class="ch-hint" id="chHint"></div>
+            <div class="camera-wrap">
+                <video id="cameraFeed" autoplay playsinline muted></video>
+                <div class="cam-label">Live Camera</div>
+            </div>
+            <canvas id="captureCanvas"></canvas>
+            <div class="ch-btns">
+                <button class="btn-capture" onclick="capturePhoto()">📸 This is it!</button>
+                <button class="btn-snooze" onclick="snooze()">😴 5 min</button>
+            </div>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <div class="result-icon" id="rIcon"></div>
+            <div class="result-title" id="rTitle"></div>
+            <div class="result-sub" id="rSub"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API = 'http://localhost:8000';
+        let alarms = [];
+        let sessionId = null;
+        let stream = null;
+        let selectedDays = new Set();
+        let audioCtx = null, beepInterval = null;
+
+        // ── Clock ──────────────────────────────────────────────────────────────
+        const WDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        function tick() {
+            const n = new Date();
+            const hh = String(n.getHours()).padStart(2, '0');
+            const mm = String(n.getMinutes()).padStart(2, '0');
+            const ss = String(n.getSeconds()).padStart(2, '0');
+            document.getElementById('liveClock').textContent = `${hh}:${mm}:${ss}`;
+            document.getElementById('bigTime').textContent = `${hh}:${mm}`;
+            document.getElementById('dateLabel').textContent = `${WDAYS[n.getDay()]}, ${MONS[n.getMonth()]} ${n.getDate()}`;
+            checkAlarms(`${hh}:${mm}`, n.getDay() === 0 ? 6 : n.getDay() - 1);
+        }
+        setInterval(tick, 1000); tick();
+
+        // ── Tabs ───────────────────────────────────────────────────────────────
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach((t, i) => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            const names = ['alarms', 'add', 'objects'];
+            document.querySelectorAll('.tab')[names.indexOf(name)].classList.add('active');
+            document.getElementById('panel-' + name).classList.add('active');
+            if (name === 'alarms') loadAlarms();
+            if (name === 'objects') loadObjects();
+        }
+
+        // ── Alarms ─────────────────────────────────────────────────────────────
+        async function loadAlarms() {
+            try {
+                const r = await fetch(API + '/alarms');
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const data = await r.json();
+                alarms = Array.isArray(data) ? data : [];
+                renderAlarms();
+            } catch (e) {
+                alarms = [];
+                document.getElementById('alarmList').innerHTML =
+                    '<div class="empty-state"><div class="ico">⚠️</div>Cannot reach API (' + e.message + ') — is the server running on port 8000?</div>';
+            }
+        }
+
+        function renderAlarms() {
+            const el = document.getElementById('alarmList');
+            if (!alarms.length) { el.innerHTML = '<div class="empty-state"><div class="ico">⏰</div>No alarms. Add one!</div>'; return; }
+            const DL = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+            el.innerHTML = alarms.map(a => `
+    <div class="alarm-card ${a.is_active ? 'on' : ''}">
+      <div>
+        <div class="alarm-time">${a.time}</div>
+        <div class="alarm-meta">${a.label} · ${a.days && a.days.length ? a.days.map(d => DL[d]).join(' ') : 'Once'}</div>
+        <button class="test-btn" onclick="testTrigger('${a.id}')">🧪 Test trigger</button>
+      </div>
+      <div class="alarm-right">
+        <label class="toggle"><input type="checkbox" ${a.is_active ? 'checked' : ''} onchange="toggleAlarm('${a.id}',this.checked)"/><span class="track"></span></label>
+        <button class="del-btn" onclick="deleteAlarm('${a.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+        }
+
+        function checkAlarms(hhmm, weekday) {
+            for (const a of alarms) {
+                if (!a.is_active || a.time !== hhmm) continue;
+                if (a.days && a.days.length && !a.days.includes(weekday)) continue;
+                const key = `fired-${a.id}-${hhmm}-${new Date().toDateString()}`;
+                if (sessionStorage.getItem(key)) continue;
+                sessionStorage.setItem(key, '1');
+                triggerAlarm(a.id);
+                break;
+            }
+        }
+
+        async function triggerAlarm(id) {
+            try {
+                const r = await fetch(`${API}/alarms/trigger/${id}`, { method: 'POST' });
+                const d = await r.json();
+                sessionId = d.session_id;
+                openChallenge(d);
+            } catch { toast('⚠️ API unreachable'); }
+        }
+
+        async function testTrigger(id) { await triggerAlarm(id); }
+
+        async function toggleAlarm(id, active) {
+            try {
+                await fetch(`${API}/alarms/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: active }) });
+                loadAlarms();
+            } catch { toast('API error'); }
+        }
+
+        async function deleteAlarm(id) {
+            try {
+                await fetch(`${API}/alarms/${id}`, { method: 'DELETE' });
+                toast('Alarm removed'); loadAlarms();
+            } catch { toast('API error'); }
+        }
+
+        // ── Add Alarm ──────────────────────────────────────────────────────────
+        document.querySelectorAll('.day-chip').forEach(b => {
+            b.addEventListener('click', () => {
+                const d = parseInt(b.dataset.d);
+                selectedDays.has(d) ? (selectedDays.delete(d), b.classList.remove('sel')) : (selectedDays.add(d), b.classList.add('sel'));
+            });
+        });
+
+        async function createAlarm() {
+            const label = document.getElementById('fLabel').value.trim() || 'Wake Up!';
+            const time = document.getElementById('fTime').value;
+            if (!time) { toast('Pick a time!'); return; }
+            try {
+                const r = await fetch(API + '/alarms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label, time, days: [...selectedDays] }) });
+                if (!r.ok) { const e = await r.json(); toast('Error: ' + (e.detail || r.status)); return; }
+                toast('✅ Alarm set!');
+                selectedDays.clear();
+                document.querySelectorAll('.day-chip').forEach(b => b.classList.remove('sel'));
+                switchTab('alarms');
+            } catch (e) { toast('API error: ' + e.message); }
+        }
+
+        // ── Objects ────────────────────────────────────────────────────────────
+        async function loadObjects() {
+            try {
+                const r = await fetch(API + '/room-objects');
+                const obs = await r.json();
+                document.getElementById('objectsGrid').innerHTML = obs.map(o => `
+      <div class="obj-card">
+        <div class="obj-emoji">${o.emoji}</div>
+        <div class="obj-name">${o.name}</div>
+        <div class="obj-cat">${o.category}</div>
+      </div>`).join('');
+            } catch {
+                document.getElementById('objectsGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="ico">⚠️</div>API unreachable</div>';
+            }
+        }
+
+        // ── Challenge Overlay ──────────────────────────────────────────────────
+        function openChallenge(data) {
+            document.getElementById('ringEmoji').textContent = data.object_emoji;
+            document.getElementById('chObject').textContent = `${data.object_emoji} ${data.object_name}`;
+            document.getElementById('chHint').textContent = data.hint;
+            document.getElementById('challengeCard').style.display = 'block';
+            document.getElementById('resultBox').classList.remove('show');
+            document.getElementById('overlay').classList.add('active');
+            startCamera(); startBeep();
+        }
+
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(s => { stream = s; document.getElementById('cameraFeed').srcObject = s; })
+                .catch(() => toast('📷 Camera denied — please allow access'));
+        }
+        function stopCamera() { stream && stream.getTracks().forEach(t => t.stop()); stream = null; }
+
+        async function capturePhoto() {
+            const v = document.getElementById('cameraFeed'), c = document.getElementById('captureCanvas');
+            c.width = v.videoWidth || 640; c.height = v.videoHeight || 480;
+            c.getContext('2d').drawImage(v, 0, 0);
+            c.toBlob(async blob => {
+                if (!blob) { toast('Capture failed'); return; }
+                const fd = new FormData(); fd.append('file', blob, 'snap.jpg');
+                try {
+                    const r = await fetch(`${API}/sessions/${sessionId}/verify`, { method: 'POST', body: fd });
+                    showResult(await r.json());
+                } catch { toast('Verify error'); }
+            }, 'image/jpeg', 0.85);
+        }
+
+        function showResult(data) {
+            stopCamera(); stopBeep();
+            document.getElementById('challengeCard').style.display = 'none';
+            const rb = document.getElementById('resultBox'); rb.classList.add('show');
+            document.getElementById('rIcon').textContent = data.success ? '✅' : '❌';
+            document.getElementById('rTitle').textContent = data.success ? 'Alarm Dismissed! 🎉' : 'Not quite — try again!';
+            document.getElementById('rSub').textContent = data.message;
+            if (data.success) {
+                setTimeout(() => { document.getElementById('overlay').classList.remove('active'); loadAlarms(); }, 2200);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('challengeCard').style.display = 'block';
+                    rb.classList.remove('show');
+                    startCamera(); startBeep();
+                }, 2000);
+            }
+        }
+
+        async function snooze() {
+            try { await fetch(`${API}/sessions/${sessionId}/snooze`, { method: 'POST' }); } catch { }
+            stopCamera(); stopBeep();
+            document.getElementById('overlay').classList.remove('active');
+            toast('😴 Snoozed for 5 minutes');
+        }
+
+        // ── Beep ───────────────────────────────────────────────────────────────
+        function startBeep() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                beepInterval = setInterval(() => {
+                    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(900, audioCtx.currentTime);
+                    o.frequency.setValueAtTime(680, audioCtx.currentTime + 0.1);
+                    g.gain.setValueAtTime(0.28, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.38);
+                    o.start(); o.stop(audioCtx.currentTime + 0.4);
+                }, 520);
+            } catch { }
+        }
+        function stopBeep() { clearInterval(beepInterval); try { audioCtx && audioCtx.close(); } catch { } }
+
+        // ── Toast ──────────────────────────────────────────────────────────────
+        function toast(msg) {
+            const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2800);
+        }
+
+        loadAlarms();
+    </script>
+</body>
+
+</html>
